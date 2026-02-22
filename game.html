@@ -231,7 +231,8 @@
 
         // === ИСПРАВЛЕННЫЕ ОБРАБОТЧИКИ (главный фикс) ===
         function handleStart(e) {
-            if (!gameStarted) return;   // ← КЛЮЧЕВАЯ СТРОКА
+            if (!gameStarted) return;
+            if (isGameOver) return;
             e.preventDefault();
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
@@ -240,7 +241,8 @@
         }
 
         function handleMove(e) {
-            if (!gameStarted) return;   // ← КЛЮЧЕВАЯ СТРОКА
+            if (!gameStarted) return;
+            if (isGameOver) return;
             e.preventDefault();
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
