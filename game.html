@@ -59,42 +59,6 @@
         #fact-popup.show { opacity: 1; animation: factPulse 0.5s; }
         @keyframes factPulse { 0% { transform: translateX(-50%) scale(0.9); } 100% { transform: translateX(-50%) scale(1); } }
         
-        #controls { 
-            position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); 
-            width: 100%; text-align: center; z-index: 10; 
-            color: rgba(255,255,255,0.6); font-size: 12px; 
-        }
-        
-        /* Управление: слева влево/вправо, справа — ОГРОМНАЯ кнопка ОГОНЬ */
-        #touch-zone { 
-            position: absolute; bottom: 0; left: 0; right: 0; 
-            height: 45%; min-height: 160px; z-index: 5;
-            display: flex;
-        }
-        #touch-move { 
-            flex: 1; 
-            display: grid; 
-            grid-template-columns: 1fr 1fr;
-            touch-action: none;
-        }
-        #touch-left, #touch-right { 
-            touch-action: none;
-        }
-        #touch-shoot { 
-            flex: 0 0 45%;
-            min-width: 120px;
-            display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(180deg, rgba(0,255,204,0.4), rgba(138,43,226,0.4));
-            border-left: 4px solid #00ffcc;
-            color: white; font-size: 22px; font-weight: bold;
-            text-shadow: 0 0 20px #00ffcc;
-            touch-action: none;
-            -webkit-user-select: none; user-select: none;
-        }
-        #touch-shoot:active { 
-            background: linear-gradient(180deg, rgba(0,255,204,0.7), rgba(138,43,226,0.7));
-        }
-        
         #game-over { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             z-index: 20; color: #ff0044; font-size: clamp(24px, 6vw, 42px); text-align: center; 
@@ -121,15 +85,6 @@
     <div id="ui">ЗВЁЗД: <span id="score">0</span></div>
     <div id="combo"></div>
     <div id="fact-popup"></div>
-    <div id="controls">Слева: влево/вправо · Справа: СТРЕЛЯТЬ!</div>
-    
-    <div id="touch-zone">
-        <div id="touch-move">
-            <div id="touch-left"></div>
-            <div id="touch-right"></div>
-        </div>
-        <div id="touch-shoot">✦ СТРЕЛЯТЬ</div>
-    </div>
     
     <div id="game-over">
         КОРАБЛЬ РАЗБИТ!<br>
@@ -252,35 +207,45 @@
 
         let meteorInterval = setInterval(spawnMeteor, 1500);
 
-        const keys = { left: false, right: false };
         let lastShot = 0;
         const shotCooldown = 120;
 
-        const left = document.getElementById('touch-left');
-        const right = document.getElementById('touch-right');
-        const shoot = document.getElementById('touch-shoot');
+        function getShipBounds() {
+            const vFov = camera.fov * Math.PI / 180;
+            const h = 2 * Math.tan(vFov / 2) * Math.abs(camera.position.z - player.position.z);
+            const w = h * (window.innerWidth / window.innerHeight);
+            return { min: -w/2 + 0.5, max: w/2 - 0.5 };
+        }
 
-        const preventAll = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
-        const setKey = (side, val) => (e) => { preventAll(e); keys[side] = val; };
+        function screenToWorldX(clientX) {
+            const b = getShipBounds();
+            const t = clientX / window.innerWidth;
+            return b.min + t * (b.max - b.min);
+        }
 
-        left.addEventListener('touchstart', (e)=>{ preventAll(e); keys.left=true; }, { passive: false });
-        left.addEventListener('touchend', (e)=>{ preventAll(e); keys.left=false; }, { passive: false });
-        left.addEventListener('touchcancel', (e)=>{ keys.left=false; }, { passive: false });
-        right.addEventListener('touchstart', (e)=>{ preventAll(e); keys.right=true; }, { passive: false });
-        right.addEventListener('touchend', (e)=>{ preventAll(e); keys.right=false; }, { passive: false });
-        right.addEventListener('touchcancel', (e)=>{ keys.right=false; }, { passive: false });
-        left.addEventListener('pointerdown', setKey('left', true), { passive: false });
-        left.addEventListener('pointerup', setKey('left', false), { passive: false });
-        left.addEventListener('pointerleave', setKey('left', false), { passive: false });
-        right.addEventListener('pointerdown', setKey('right', true), { passive: false });
-        right.addEventListener('pointerup', setKey('right', false), { passive: false });
-        right.addEventListener('pointerleave', setKey('right', false), { passive: false });
-        const doFire = (e) => { preventAll(e); fire(); };
-        shoot.addEventListener('touchstart', doFire, { passive: false });
-        shoot.addEventListener('touchend', preventAll, { passive: false });
-        shoot.addEventListener('pointerdown', doFire, { passive: false });
+        function updateShipX(clientX) {
+            const b = getShipBounds();
+            player.position.x = Math.max(b.min, Math.min(b.max, screenToWorldX(clientX)));
+        }
+
+        function handleStart(e) {
+            e.preventDefault();
+            const x = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+            updateShipX(x);
+            fire();
+        }
+
+        function handleMove(e) {
+            e.preventDefault();
+            const x = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+            updateShipX(x);
+        }
 
         document.body.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.body.addEventListener('touchstart', handleStart, { passive: false });
+        document.body.addEventListener('touchmove', handleMove, { passive: false });
+        document.body.addEventListener('mousedown', handleStart);
+        document.body.addEventListener('mousemove', (e) => { if (e.buttons) handleMove(e); });
         document.getElementById('btn-start').addEventListener('click', (e) => {
             e.preventDefault();
             document.getElementById('title-screen').classList.add('hidden');
@@ -299,9 +264,6 @@
 
             starMesh.position.y -= 0.02;
             if (starMesh.position.y < -20) starMesh.position.y = 0;
-
-            if (keys.left && player.position.x > -8) player.position.x -= 0.15;
-            if (keys.right && player.position.x < 8) player.position.x += 0.15;
 
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
@@ -375,4 +337,3 @@
     </script>
 </body>
 </html>
-
