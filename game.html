@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#020205">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Star Polyhedron — Звёздный Шутер</title>
+    <style>
+        * { touch-action: manipulation; }
+        html, body { 
+            margin: 0; padding: 0; 
+            background: #020205; 
+            overflow: hidden; 
+            font-family: 'Arial Black', sans-serif; 
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #title-screen {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 30;
+            background: linear-gradient(180deg, #020205 0%, #0a0820 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; text-align: center; transition: opacity 0.5s;
+        }
+        #title-screen.hidden { opacity: 0; pointer-events: none; }
+        #title-screen h1 { color: #00ffcc; font-size: clamp(24px, 6vw, 48px); text-shadow: 0 0 20px #00ffcc; margin: 0 0 10px; }
+        #title-screen .subtitle { color: #8a2be2; font-size: clamp(14px, 3vw, 22px); margin-bottom: 20px; }
+        #title-screen .desc { color: rgba(255,255,255,0.7); font-size: clamp(12px, 2.5vw, 16px); max-width: 400px; margin-bottom: 30px; }
+        .btn-start { 
+            padding: 18px 50px; font-size: 22px; font-family: inherit;
+            background: linear-gradient(135deg, #00ffcc, #8a2be2); color: #020205;
+            border: none; border-radius: 30px; cursor: pointer;
+            box-shadow: 0 0 30px rgba(0,255,204,0.5);
+        }
+        .btn-start:active { transform: scale(0.95); }
+        
+        #ui { 
+            position: absolute; top: 15px; left: 15px; z-index: 10; 
+            color: #00ffcc; font-size: clamp(18px, 4vw, 26px); 
+            text-shadow: 0 0 10px #00ffcc; 
+        }
+        #combo { 
+            position: absolute; top: 50px; left: 50%; transform: translateX(-50%); z-index: 10;
+            color: #ffcc00; font-size: clamp(16px, 4vw, 24px); 
+            text-shadow: 0 0 15px #ffcc00;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        #fact-popup {
+            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 15;
+            max-width: 90%; padding: 15px 25px; background: rgba(0,0,0,0.9);
+            border: 2px solid #8a2be2; border-radius: 15px;
+            color: #00ffcc; font-size: clamp(12px, 2.5vw, 16px); text-align: center;
+            box-shadow: 0 0 25px rgba(138,43,226,0.6);
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+        }
+        #fact-popup.show { opacity: 1; animation: factPulse 0.5s; }
+        @keyframes factPulse { 0% { transform: translateX(-50%) scale(0.9); } 100% { transform: translateX(-50%) scale(1); } }
+        
+        #controls { 
+            position: absolute; bottom: 15px; width: 100%; text-align: center; z-index: 10; 
+            color: rgba(255,255,255,0.5); font-size: clamp(11px, 2.5vw, 14px); 
+        }
+        
+        /* Мобильное управление */
+        #touch-zone { 
+            position: absolute; bottom: 0; left: 0; right: 0; height: 45%; z-index: 5;
+            display: grid; grid-template-columns: 1fr 1fr; 
+        }
+        #touch-left, #touch-right { 
+            touch-action: none; 
+            /* визуальная подсказка в дебаге: background: rgba(255,0,0,0.1); */
+        }
+        #touch-shoot { 
+            position: absolute; right: 20px; bottom: 50%; 
+            width: 80px; height: 80px; 
+            border-radius: 50%; background: rgba(0,255,204,0.2);
+            border: 3px solid #00ffcc; 
+            transform: translateY(50%);
+            display: flex; align-items: center; justify-content: center;
+            color: #00ffcc; font-size: 12px; font-weight: bold;
+        }
+        
+        #game-over { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            z-index: 20; color: #ff0044; font-size: clamp(24px, 6vw, 42px); text-align: center; 
+            text-shadow: 0 0 20px #ff0044; display: none; 
+            background: rgba(0,0,0,0.9); padding: 30px; border-radius: 20px; 
+            border: 2px solid #ff0044; max-width: 90%;
+        }
+        .btn { 
+            margin-top: 20px; padding: 14px 30px; background: #00ffcc; color: #020205; 
+            font-size: 18px; font-family: inherit; border: none; 
+            border-radius: 12px; cursor: pointer; min-width: 140px;
+        }
+        .btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+    <div id="title-screen">
+        <h1>★ Star Polyhedron ★</h1>
+        <p class="subtitle">Звёздный Шутер</p>
+        <p class="desc">Защищай космос, стреляя фигурами Кеплера! Каждое уничтожение — новый факт о звёздчатых многогранниках.</p>
+        <button class="btn-start" id="btn-start">ИГРАТЬ</button>
+    </div>
+    
+    <div id="ui">ЗВЁЗД: <span id="score">0</span></div>
+    <div id="combo"></div>
+    <div id="fact-popup"></div>
+    <div id="controls">ПК: стрелки + пробел • Телефон: касания слева/справа + кнопка ОГОНЬ</div>
+    
+    <div id="touch-zone" style="display:none;">
+        <div id="touch-left"></div>
+        <div id="touch-right"></div>
+    </div>
+    <div id="touch-shoot" style="display:none;">ОГОНЬ</div>
+    
+    <div id="game-over">
+        КОРАБЛЬ РАЗБИТ!<br>
+        <span style="font-size: clamp(16px, 4vw, 22px); color: white;">Счёт: <span id="final-score">0</span></span><br>
+        <button class="btn" onclick="location.reload()">Ещё раз</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- Факты о Star Polyhedron (из презентации!) ---
+        const STAR_FACTS = [
+            "Звёздчатый октаэдр — два тетраэдра, проходящих сквозь друг друга!",
+            "Кеплер открыл звёздчатые многогранники в 1619 году.",
+            "У малого звёздчатого додекаэдра 12 граней-пентаграмм!",
+            "Грани звездчатых многогранников пересекаются — это математика, не баг!",
+            "Тень звездчатого додекаэдра даёт правильный десятиугольник.",
+            "В играх такие фигуры — магические щиты и порталы.",
+            "Звездчатый многогранник похож на инопланетный кристалл!",
+            "Каждая грань обычного многогранника «выросла» в пирамиду.",
+        ];
+        let factTimeout;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const particlesGeometry = new THREE.BufferGeometry();
+        const posArray = new Float32Array(2500 * 3);
+        for(let i = 0; i < 2500 * 3; i++) posArray[i] = (Math.random() - 0.5) * 100;
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const starMesh = new THREE.Points(
+            particlesGeometry,
+            new THREE.PointsMaterial({ size: 0.05, color: 0xffffff, transparent: true, opacity: 0.8 })
+        );
+        scene.add(starMesh);
+
+        scene.add(new THREE.AmbientLight(0x404040, 2));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
+
+        let score = 0, combo = 0, comboTime = 0, isGameOver = false, gameStarted = false;
+
+        function createStarPolyhedron(size, color, edgeColor) {
+            const g = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3, roughness: 0.2, metalness: 0.9 });
+            const edgesMat = new THREE.LineBasicMaterial({ color: edgeColor });
+            const geo1 = new THREE.TetrahedronGeometry(size);
+            const t1 = new THREE.Mesh(geo1, mat);
+            t1.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo1), edgesMat));
+            const geo2 = new THREE.TetrahedronGeometry(size);
+            const t2 = new THREE.Mesh(geo2, mat);
+            t2.scale.set(-1, -1, -1);
+            t2.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo2), edgesMat));
+            g.add(t1); g.add(t2);
+            return g;
+        }
+
+        const player = createStarPolyhedron(0.9, 0x00ffcc, 0xffffff);
+        player.position.y = -4;
+        scene.add(player);
+
+        camera.position.z = 10;
+
+        const bullets = [];
+        const meteors = [];
+        const particles = [];
+
+        function createBullet() {
+            const b = createStarPolyhedron(0.4, 0x8a2be2, 0x00ffcc);
+            b.position.set(player.position.x, player.position.y + 1, 0);
+            scene.add(b);
+            bullets.push(b);
+        }
+
+        function spawnExplosion(x, y, color) {
+            const count = 12;
+            for (let i = 0; i < count; i++) {
+                const geo = new THREE.OctahedronGeometry(0.15);
+                const mat = new THREE.MeshBasicMaterial({ color: color || 0x8a2be2, transparent: true, opacity: 1 });
+                const p = new THREE.Mesh(geo, mat);
+                p.position.set(x, y, 0);
+                const vx = (Math.random() - 0.5) * 0.15;
+                const vy = (Math.random() - 0.5) * 0.15;
+                scene.add(p);
+                particles.push({ mesh: p, vx, vy, life: 1 });
+            }
+        }
+
+        function showFact() {
+            const el = document.getElementById('fact-popup');
+            el.textContent = STAR_FACTS[Math.floor(Math.random() * STAR_FACTS.length)];
+            el.classList.add('show');
+            clearTimeout(factTimeout);
+            factTimeout = setTimeout(() => el.classList.remove('show'), 3500);
+        }
+
+        function showCombo(msg) {
+            const el = document.getElementById('combo');
+            el.textContent = msg;
+            el.style.opacity = '1';
+            clearTimeout(comboTime);
+            comboTime = setTimeout(() => { el.style.opacity = '0'; }, 1200);
+        }
+
+        function spawnMeteor() {
+            if (isGameOver || !gameStarted) return;
+            const r = Math.random() * 0.8 + 0.4;
+            const meteor = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(r, 0),
+                new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9 })
+            );
+            meteor.position.set((Math.random() - 0.5) * 16, 8, 0);
+            meteor.userData = { rotX: Math.random() * 0.05, rotY: Math.random() * 0.05 };
+            scene.add(meteor);
+            meteors.push(meteor);
+        }
+
+        let meteorInterval = setInterval(spawnMeteor, 1500);
+
+        const keys = { left: false, right: false };
+        let lastShot = 0;
+        const shotCooldown = 180;
+        const isTouch = 'ontouchstart' in window;
+
+        if (isTouch) {
+            document.getElementById('touch-zone').style.display = 'grid';
+            document.getElementById('touch-shoot').style.display = 'flex';
+            const left = document.getElementById('touch-left');
+            const right = document.getElementById('touch-right');
+            const shoot = document.getElementById('touch-shoot');
+            const setKey = (side, val) => (e) => { e.preventDefault(); keys[side] = val; };
+            left.addEventListener('touchstart', setKey('left', true), { passive: false });
+            left.addEventListener('touchend', setKey('left', false), { passive: false });
+            left.addEventListener('touchcancel', setKey('left', false), { passive: false });
+            right.addEventListener('touchstart', setKey('right', true), { passive: false });
+            right.addEventListener('touchend', setKey('right', false), { passive: false });
+            right.addEventListener('touchcancel', setKey('right', false), { passive: false });
+            shoot.addEventListener('touchstart', (e) => { e.preventDefault(); fire(); }, { passive: false });
+        }
+
+        document.getElementById('btn-start').addEventListener('click', () => {
+            document.getElementById('title-screen').classList.add('hidden');
+            gameStarted = true;
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'ArrowLeft') keys.left = true;
+            if (e.code === 'ArrowRight') keys.right = true;
+            if (e.code === 'Space') { e.preventDefault(); fire(); }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft') keys.left = false;
+            if (e.code === 'ArrowRight') keys.right = false;
+        });
+
+        function fire() {
+            if (isGameOver || !gameStarted) return;
+            const now = Date.now();
+            if (now - lastShot >= shotCooldown) { lastShot = now; createBullet(); }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!gameStarted) { renderer.render(scene, camera); return; }
+
+            starMesh.position.y -= 0.02;
+            if (starMesh.position.y < -20) starMesh.position.y = 0;
+
+            if (keys.left && player.position.x > -8) player.position.x -= 0.15;
+            if (keys.right && player.position.x < 8) player.position.x += 0.15;
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.position.y += 0.3;
+                b.rotation.z += 0.2;
+                b.rotation.x += 0.1;
+                if (b.position.y > 10) { scene.remove(b); bullets.splice(i, 1); }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.mesh.position.x += p.vx;
+                p.mesh.position.y += p.vy;
+                p.life -= 0.03;
+                p.mesh.material.opacity = p.life;
+                if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+            }
+
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                const m = meteors[i];
+                m.position.y -= 0.035;
+                m.rotation.x += m.userData.rotX;
+                m.rotation.y += m.userData.rotY;
+
+                if (m.position.distanceTo(player.position) < 1.2 && !isGameOver) gameOver();
+
+                if (m.position.y < -8) {
+                    scene.remove(m);
+                    meteors.splice(i, 1);
+                    combo = 0;
+                    continue;
+                }
+
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    const b = bullets[j];
+                    if (m.position.distanceTo(b.position) < 1.0) {
+                        spawnExplosion(m.position.x, m.position.y);
+                        scene.remove(m);
+                        meteors.splice(i, 1);
+                        scene.remove(b);
+                        bullets.splice(j, 1);
+                        combo++;
+                        const pts = 10 + (combo >= 3 ? 5 : 0) + (combo >= 5 ? 10 : 0);
+                        score += pts;
+                        document.getElementById('score').innerText = score;
+                        if (combo >= 5) showCombo('★ Stella Octangula! +' + pts + ' ★');
+                        else if (combo >= 3) showCombo('Комбо x' + combo + '!');
+                        showFact();
+                        break;
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            clearInterval(meteorInterval);
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over').style.display = 'block';
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
