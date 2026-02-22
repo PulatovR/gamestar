@@ -55,63 +55,66 @@
         #ui { position: absolute; top: 18px; left: 18px; z-index: 10; color: #00ffcc; font-size: clamp(18px, 4.5vw, 26px); text-shadow: 0 0 12px #00ffcc; }
         #high-score-ui { position: absolute; top: 18px; right: 18px; z-index: 10; color: #ffcc00; font-size: clamp(16px, 4vw, 22px); text-shadow: 0 0 12px #ffcc00; }
         #combo { position: absolute; top: 65px; left: 50%; transform: translateX(-50%); z-index: 10; color: #ffcc00; font-size: clamp(18px, 5vw, 28px); text-shadow: 0 0 20px #ffcc00; opacity: 0; transition: all 0.4s; }
-        #fact-popup {
-            position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); z-index: 15;
-            max-width: 90%; padding: 16px 24px; background: rgba(0,0,0,0.92);
-            border: 3px solid #8a2be2; border-radius: 18px;
-            color: #00ffcc; font-size: clamp(13px, 3vw, 17px); text-align: center;
-            box-shadow: 0 0 30px rgba(138,43,226,0.7);
-            opacity: 0; pointer-events: none; transition: opacity 0.5s;
-        }
-        #fact-popup.show { opacity: 1; }
-
+        
         #game-over { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             z-index: 20; color: #ff0044; font-size: clamp(26px, 7vw, 46px); text-align: center; 
             text-shadow: 0 0 25px #ff0044; display: none; 
-            background: rgba(2,2,5,0.95); padding: 35px 25px; border-radius: 25px; 
-            border: 3px solid #ff0044; max-width: 92%;
+            background: rgba(2,2,5,0.96); padding: 40px 28px; border-radius: 25px; 
+            border: 3px solid #ff0044; max-width: 92%; box-shadow: 0 0 60px rgba(255,0,68,0.4);
+        }
+        #game-over .fact {
+            margin-top: 24px;
+            padding: 16px 18px;
+            background: rgba(138,43,226,0.12);
+            border: 2px solid rgba(138,43,226,0.4);
+            border-radius: 14px;
+            font-size: clamp(13.5px, 3.4vw, 16px);
+            color: #88ffdd;
+            line-height: 1.45;
+            text-align: center;
         }
         .btn { 
-            margin-top: 25px; padding: 18px 40px; background: #00ffcc; color: #020205; 
+            margin-top: 28px; padding: 18px 40px; background: #00ffcc; color: #020205; 
             font-size: 19px; font-family: inherit; border: none; 
-            border-radius: 50px; min-width: 200px;
+            border-radius: 50px; min-width: 210px; box-shadow: 0 0 25px #00ffcc;
         }
-        .btn:active { transform: scale(0.95); }
+        .btn:active { transform: scale(0.94); }
     </style>
 </head>
 <body>
     <div id="title-screen">
         <h1>★ STAR POLYHEDRON ★</h1>
         <p class="subtitle">ЗВЁЗДНЫЙ ШУТЕР</p>
-        <p class="desc">Защищай космос от метеоров!<br>Каждое комбо — новый факт о звёздчатых многогранниках</p>
+        <p class="desc">Защищай космос от метеоров!<br>Каждое комбо — новая история о звёздчатых многогранниках</p>
         <button class="btn-start" id="btn-start">ИГРАТЬ</button>
     </div>
     
     <div id="ui">ЗВЁЗД: <span id="score">0</span></div>
     <div id="high-score-ui">HI: <span id="high-score-ui-value">0</span></div>
     <div id="combo"></div>
-    <div id="fact-popup"></div>
     
     <div id="game-over">
         КОРАБЛЬ РАЗБИТ!<br>
         <span style="font-size: clamp(18px,4.5vw,26px);color:#fff;">СЧЁТ: <span id="final-score">0</span></span><br>
         <span style="font-size: clamp(16px,4vw,22px);color:#ffcc00;">HIGH: <span id="final-high">0</span></span>
-        <button class="btn" onclick="location.reload()">ЕЩЁ РАЗ</button>
+        
+        <div id="end-fact" class="fact"></div>
+        
+        <button class="btn" id="restart-btn">ЕЩЁ РАЗ</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script>
         const STAR_FACTS = [
-            "Звёздчатый октаэдр — два тетраэдра, проходящих сквозь друг друга!",
-            "Кеплер открыл звёздчатые многогранники в 1619 году.",
-            "Малый звёздчатый додекаэдр имеет 12 граней-пентаграмм!",
-            "Грани пересекаются — это математика, а не ошибка!",
-            "Тень звёздчатого додекаэдра — идеальный десятиугольник.",
-            "В играх такие фигуры — настоящие космические щиты!"
+            "Звёздчатый октаэдр — это два тетраэдра, проходящих сквозь друг друга!",
+            "Иоганн Кеплер открыл звёздчатые многогранники в 1619 году.",
+            "Малый звёздчатый додекаэдр имеет 12 граней в форме пентаграмм.",
+            "Грани звёздчатых многогранников пересекаются — это не ошибка, а математика!",
+            "Проекция звёздчатого додекаэдра даёт идеальный десятиугольник.",
+            "В играх такие фигуры выглядят как настоящие космические артефакты!"
         ];
 
-        let factTimeout;
         let highScore = localStorage.getItem('starHigh') ? parseInt(localStorage.getItem('starHigh')) : 0;
         document.getElementById('high-score-ui-value').innerText = highScore;
 
@@ -121,6 +124,7 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        // Звёздный фон
         const particlesGeometry = new THREE.BufferGeometry();
         const posArray = new Float32Array(3500 * 3);
         for(let i = 0; i < 3500 * 3; i++) posArray[i] = (Math.random() - 0.5) * 120;
@@ -179,14 +183,6 @@
             }
         }
 
-        function showFact() {
-            const el = document.getElementById('fact-popup');
-            el.textContent = STAR_FACTS[Math.floor(Math.random()*STAR_FACTS.length)];
-            el.classList.add('show');
-            clearTimeout(factTimeout);
-            factTimeout = setTimeout(() => el.classList.remove('show'), 3800);
-        }
-
         function showCombo(msg) {
             const el = document.getElementById('combo');
             el.textContent = msg;
@@ -194,28 +190,17 @@
             setTimeout(() => el.style.opacity = '0', 1100);
         }
 
-        function spawnMeteor() {
-            if (isGameOver || !gameStarted) return;
-            const r = Math.random() * 0.7 + 0.5;
-            const meteor = new THREE.Mesh(
-                new THREE.DodecahedronGeometry(r, 1),
-                new THREE.MeshStandardMaterial({color: 0x555555, roughness: 0.95, metalness: 0.1})
-            );
-            meteor.position.set((Math.random() - 0.5) * 15, 9, 0);
-            meteor.userData = { rotX: Math.random() * 0.06, rotY: Math.random() * 0.06 };
-            scene.add(meteor);
-            meteors.push(meteor);
-        }
-
-        let meteorInterval = setInterval(spawnMeteor, 1250);
-
+        // === УЛУЧШЕННЫЕ ГРАНИЦЫ ===
         function getShipBounds() {
             const vFov = camera.fov * Math.PI / 180;
             const distance = Math.abs(camera.position.z);
             const height = 2 * Math.tan(vFov / 2) * distance;
-            const width = height * (window.innerWidth / window.innerHeight);
-            const shipRadius = 1.4;
-            return { min: -width/2 + shipRadius, max: width/2 - shipRadius };
+            const width = height * camera.aspect;
+            const shipRadius = 1.45;
+            return { 
+                min: -width/2 + shipRadius, 
+                max: width/2 - shipRadius 
+            };
         }
 
         function screenToWorldX(clientX) {
@@ -229,10 +214,29 @@
             targetX = Math.max(b.min, Math.min(b.max, screenToWorldX(clientX)));
         }
 
-        // === ИСПРАВЛЕННЫЕ ОБРАБОТЧИКИ (главный фикс) ===
+        function spawnMeteor() {
+            if (isGameOver || !gameStarted) return;
+            
+            const bounds = getShipBounds();
+            const spawnMargin = 1.8;
+            const spawnX = bounds.min * 0.92 + Math.random() * (bounds.max - bounds.min) * 0.92 + (Math.random() - 0.5) * spawnMargin;
+            
+            const r = Math.random() * 0.7 + 0.52;
+            const meteor = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(r, 1),
+                new THREE.MeshStandardMaterial({color: 0x555555, roughness: 0.95, metalness: 0.1})
+            );
+            meteor.position.set(spawnX, 9.5, 0);
+            meteor.userData = { rotX: Math.random() * 0.06, rotY: Math.random() * 0.06 };
+            scene.add(meteor);
+            meteors.push(meteor);
+        }
+
+        let meteorInterval = setInterval(spawnMeteor, 1180);
+
+        // === ОБРАБОТЧИКИ УПРАВЛЕНИЯ ===
         function handleStart(e) {
-            if (!gameStarted) return;
-            if (isGameOver) return;
+            if (!gameStarted || isGameOver) return;
             e.preventDefault();
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
@@ -241,8 +245,7 @@
         }
 
         function handleMove(e) {
-            if (!gameStarted) return;
-            if (isGameOver) return;
+            if (!gameStarted || isGameOver) return;
             e.preventDefault();
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
@@ -256,13 +259,14 @@
         document.body.addEventListener('touchmove', handleMove, {passive: false});
         document.body.addEventListener('touchend', handleEnd);
         document.body.addEventListener('mousedown', handleStart);
-        document.body.addEventListener('mousemove', (e) => { if (e.buttons) handleMove(e); });
+        document.body.addEventListener('mousemove', (e) => { if (e.buttons === 1) handleMove(e); });
         document.body.addEventListener('mouseup', handleEnd);
 
-        // === НАДЁЖНЫЙ ЗАПУСК ИГРЫ (ещё один слой защиты) ===
+        // === ЗАПУСК ИГРЫ ===
         function startTheGame() {
             document.getElementById('title-screen').classList.add('hidden');
             gameStarted = true;
+            setTimeout(() => spawnMeteor(), 600); // первый метеор быстрее
         }
 
         const btnStart = document.getElementById('btn-start');
@@ -272,16 +276,30 @@
             startTheGame();
         });
 
-        function fire() {
-            if (Date.now() - lastShot >= shotCooldown) {
-                lastShot = Date.now();
-                createBullet();
-            }
+        // === ПЕРЕЗАПУСК ===
+        function restartGame() {
+            location.reload();
+        }
+
+        const restartBtn = document.getElementById('restart-btn');
+        restartBtn.addEventListener('click', restartGame);
+        restartBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            restartGame();
+        });
+
+        function showGameOverFact() {
+            const factEl = document.getElementById('end-fact');
+            const randomFact = STAR_FACTS[Math.floor(Math.random() * STAR_FACTS.length)];
+            factEl.innerHTML = `★ ${randomFact}`;
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if (!gameStarted) { renderer.render(scene, camera); return; }
+            if (!gameStarted) { 
+                renderer.render(scene, camera); 
+                return; 
+            }
 
             player.position.x = THREE.MathUtils.lerp(player.position.x, targetX, 0.28);
             const tilt = (targetX - player.position.x) * 2.8;
@@ -300,52 +318,69 @@
                 }
             }
 
+            // Буллеты
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 b.position.y += 0.38;
                 b.rotation.z += 0.25;
                 b.rotation.x += 0.15;
-                if (b.position.y > 11) { scene.remove(b); bullets.splice(i, 1); }
+                if (b.position.y > 11) { 
+                    scene.remove(b); 
+                    bullets.splice(i, 1); 
+                }
             }
 
+            // Частицы взрыва
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.mesh.position.x += p.vx;
                 p.mesh.position.y += p.vy;
                 p.life -= 0.038;
                 p.mesh.material.opacity = p.life;
-                if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+                if (p.life <= 0) { 
+                    scene.remove(p.mesh); 
+                    particles.splice(i, 1); 
+                }
             }
 
-            meteorSpeed = Math.min(0.038 + score / 9000, 0.085);
+            // Метеориты
+            meteorSpeed = Math.min(0.038 + score / 8500, 0.088);
             for (let i = meteors.length - 1; i >= 0; i--) {
                 const m = meteors[i];
                 m.position.y -= meteorSpeed;
                 m.rotation.x += m.userData.rotX;
                 m.rotation.y += m.userData.rotY;
 
-                if (m.position.distanceTo(player.position) < 1.35) gameOver();
+                if (m.position.distanceTo(player.position) < 1.38) {
+                    gameOver();
+                    return;
+                }
 
-                if (m.position.y < -9) {
+                if (m.position.y < -9.5) {
                     scene.remove(m);
                     meteors.splice(i, 1);
                     combo = 0;
                     continue;
                 }
 
+                // Столкновение с пулями
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     const b = bullets[j];
-                    if (m.position.distanceTo(b.position) < 1.1) {
+                    if (m.position.distanceTo(b.position) < 1.15) {
                         spawnExplosion(m.position.x, m.position.y);
-                        scene.remove(m); meteors.splice(i, 1);
-                        scene.remove(b); bullets.splice(j, 1);
+                        scene.remove(m); 
+                        meteors.splice(i, 1);
+                        scene.remove(b); 
+                        bullets.splice(j, 1);
+
                         combo++;
-                        const pts = 10 + (combo >= 3 ? 8 : 0) + (combo >= 6 ? 12 : 0);
+                        const pts = 10 + (combo >= 3 ? 8 : 0) + (combo >= 6 ? 14 : 0);
                         score += pts;
                         document.getElementById('score').innerText = score;
+
                         if (combo >= 6) showCombo('★ STELLA OCTANGULA! ★');
                         else if (combo >= 3) showCombo('КОМБО x' + combo + '!');
-                        showFact();
+
                         break;
                     }
                 }
@@ -358,13 +393,19 @@
             if (isGameOver) return;
             isGameOver = true;
             clearInterval(meteorInterval);
+
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('starHigh', highScore);
             }
+
             document.getElementById('final-score').innerText = score;
             document.getElementById('final-high').innerText = highScore;
-            document.getElementById('game-over').style.display = 'block';
+            
+            showGameOverFact();
+            
+            const goScreen = document.getElementById('game-over');
+            goScreen.style.display = 'block';
         }
 
         animate();
