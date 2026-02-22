@@ -52,22 +52,9 @@
             to { text-shadow: 0 0 40px #00ffcc, 0 0 70px #8a2be2; }
         }
         
-        #ui { 
-            position: absolute; top: 18px; left: 18px; z-index: 10; 
-            color: #00ffcc; font-size: clamp(18px, 4.5vw, 26px); 
-            text-shadow: 0 0 12px #00ffcc; 
-        }
-        #high-score-ui {
-            position: absolute; top: 18px; right: 18px; z-index: 10;
-            color: #ffcc00; font-size: clamp(16px, 4vw, 22px); 
-            text-shadow: 0 0 12px #ffcc00;
-        }
-        #combo { 
-            position: absolute; top: 65px; left: 50%; transform: translateX(-50%); z-index: 10;
-            color: #ffcc00; font-size: clamp(18px, 5vw, 28px); 
-            text-shadow: 0 0 20px #ffcc00;
-            opacity: 0; transition: all 0.4s;
-        }
+        #ui { position: absolute; top: 18px; left: 18px; z-index: 10; color: #00ffcc; font-size: clamp(18px, 4.5vw, 26px); text-shadow: 0 0 12px #00ffcc; }
+        #high-score-ui { position: absolute; top: 18px; right: 18px; z-index: 10; color: #ffcc00; font-size: clamp(16px, 4vw, 22px); text-shadow: 0 0 12px #ffcc00; }
+        #combo { position: absolute; top: 65px; left: 50%; transform: translateX(-50%); z-index: 10; color: #ffcc00; font-size: clamp(18px, 5vw, 28px); text-shadow: 0 0 20px #ffcc00; opacity: 0; transition: all 0.4s; }
         #fact-popup {
             position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); z-index: 15;
             max-width: 90%; padding: 16px 24px; background: rgba(0,0,0,0.92);
@@ -115,7 +102,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script>
-        // Факты
         const STAR_FACTS = [
             "Звёздчатый октаэдр — два тетраэдра, проходящих сквозь друг друга!",
             "Кеплер открыл звёздчатые многогранники в 1619 году.",
@@ -135,7 +121,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Звёздное небо
         const particlesGeometry = new THREE.BufferGeometry();
         const posArray = new Float32Array(3500 * 3);
         for(let i = 0; i < 3500 * 3; i++) posArray[i] = (Math.random() - 0.5) * 120;
@@ -244,15 +229,18 @@
             targetX = Math.max(b.min, Math.min(b.max, screenToWorldX(clientX)));
         }
 
+        // === ИСПРАВЛЕННЫЕ ОБРАБОТЧИКИ (главный фикс) ===
         function handleStart(e) {
+            if (!gameStarted) return;   // ← КЛЮЧЕВАЯ СТРОКА
             e.preventDefault();
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
             isTouching = true;
-            if (gameStarted && !isGameOver) createBullet();
+            createBullet();
         }
 
         function handleMove(e) {
+            if (!gameStarted) return;   // ← КЛЮЧЕВАЯ СТРОКА
             e.preventDefault();
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
@@ -268,9 +256,18 @@
         document.body.addEventListener('mousedown', handleStart);
         document.body.addEventListener('mousemove', (e) => { if (e.buttons) handleMove(e); });
         document.body.addEventListener('mouseup', handleEnd);
-        document.getElementById('btn-start').addEventListener('click', () => {
+
+        // === НАДЁЖНЫЙ ЗАПУСК ИГРЫ (ещё один слой защиты) ===
+        function startTheGame() {
             document.getElementById('title-screen').classList.add('hidden');
             gameStarted = true;
+        }
+
+        const btnStart = document.getElementById('btn-start');
+        btnStart.addEventListener('click', startTheGame);
+        btnStart.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            startTheGame();
         });
 
         function fire() {
@@ -284,20 +281,15 @@
             requestAnimationFrame(animate);
             if (!gameStarted) { renderer.render(scene, camera); return; }
 
-            // Плавное движение корабля
             player.position.x = THREE.MathUtils.lerp(player.position.x, targetX, 0.28);
-            
-            // Наклон корабля
             const tilt = (targetX - player.position.x) * 2.8;
             player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, tilt, 0.35);
             player.rotation.x += 0.012;
             player.rotation.y += 0.018;
 
-            // Фон
             starMesh.position.y -= 0.025;
             if (starMesh.position.y < -30) starMesh.position.y = 30;
 
-            // Авто-стрельба при удержании
             if (isTouching && !isGameOver) {
                 const now = Date.now();
                 if (now - lastShot >= shotCooldown) {
@@ -306,32 +298,23 @@
                 }
             }
 
-            // Пули
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 b.position.y += 0.38;
                 b.rotation.z += 0.25;
                 b.rotation.x += 0.15;
-                if (b.position.y > 11) {
-                    scene.remove(b);
-                    bullets.splice(i, 1);
-                }
+                if (b.position.y > 11) { scene.remove(b); bullets.splice(i, 1); }
             }
 
-            // Частицы взрывов
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.mesh.position.x += p.vx;
                 p.mesh.position.y += p.vy;
                 p.life -= 0.038;
                 p.mesh.material.opacity = p.life;
-                if (p.life <= 0) {
-                    scene.remove(p.mesh);
-                    particles.splice(i, 1);
-                }
+                if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
             }
 
-            // Метеоры
             meteorSpeed = Math.min(0.038 + score / 9000, 0.085);
             for (let i = meteors.length - 1; i >= 0; i--) {
                 const m = meteors[i];
@@ -354,15 +337,12 @@
                         spawnExplosion(m.position.x, m.position.y);
                         scene.remove(m); meteors.splice(i, 1);
                         scene.remove(b); bullets.splice(j, 1);
-                        
                         combo++;
                         const pts = 10 + (combo >= 3 ? 8 : 0) + (combo >= 6 ? 12 : 0);
                         score += pts;
                         document.getElementById('score').innerText = score;
-                        
                         if (combo >= 6) showCombo('★ STELLA OCTANGULA! ★');
                         else if (combo >= 3) showCombo('КОМБО x' + combo + '!');
-                        
                         showFact();
                         break;
                     }
@@ -376,7 +356,6 @@
             if (isGameOver) return;
             isGameOver = true;
             clearInterval(meteorInterval);
-            
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('starHigh', highScore);
