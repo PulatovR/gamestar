@@ -4,16 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#020205">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
     <title>Star Polyhedron — Звёздный Шутер</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         * { touch-action: manipulation; -webkit-touch-callout: none; }
         html, body { 
             margin: 0; padding: 0; 
             background: #020205; 
             overflow: hidden; 
-            font-family: 'Arial Black', sans-serif; 
+            font-family: 'Press Start 2P', system-ui; 
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
@@ -23,89 +22,112 @@
             position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 30;
             background: linear-gradient(180deg, #020205 0%, #0a0820 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; text-align: center; transition: opacity 0.5s;
+            padding: 20px; text-align: center; transition: opacity 0.6s;
         }
         #title-screen.hidden { opacity: 0; pointer-events: none; }
-        #title-screen h1 { color: #00ffcc; font-size: clamp(24px, 6vw, 48px); text-shadow: 0 0 20px #00ffcc; margin: 0 0 10px; }
-        #title-screen .subtitle { color: #8a2be2; font-size: clamp(14px, 3vw, 22px); margin-bottom: 20px; }
-        #title-screen .desc { color: rgba(255,255,255,0.7); font-size: clamp(12px, 2.5vw, 16px); max-width: 400px; margin-bottom: 30px; }
-        .btn-start { 
-            padding: 18px 50px; font-size: 22px; font-family: inherit;
-            background: linear-gradient(135deg, #00ffcc, #8a2be2); color: #020205;
-            border: none; border-radius: 30px; cursor: pointer;
-            box-shadow: 0 0 30px rgba(0,255,204,0.5);
+        #title-screen h1 { 
+            color: #00ffcc; font-size: clamp(28px, 8vw, 52px); 
+            text-shadow: 0 0 30px #00ffcc, 0 0 60px #8a2be2;
+            margin: 0 0 8px; animation: titleGlow 2s infinite alternate;
         }
-        .btn-start:active { transform: scale(0.95); }
+        #title-screen .subtitle { color: #8a2be2; font-size: clamp(16px, 4vw, 24px); margin-bottom: 20px; }
+        #title-screen .desc { color: rgba(255,255,255,0.75); font-size: clamp(13px, 3vw, 17px); max-width: 420px; margin-bottom: 40px; line-height: 1.4; }
+        
+        .btn-start { 
+            padding: 20px 60px; font-size: clamp(22px, 6vw, 28px); 
+            background: linear-gradient(135deg, #00ffcc, #8a2be2); color: #020205;
+            border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 0 40px rgba(0,255,204,0.6);
+            width: 80%; max-width: 320px;
+            animation: neonPulse 1.8s infinite alternate;
+        }
+        .btn-start:active { transform: scale(0.92); }
+
+        @keyframes neonPulse { 
+            from { box-shadow: 0 0 30px #00ffcc; }
+            to { box-shadow: 0 0 70px #8a2be2, 0 0 90px #00ffcc; }
+        }
+        @keyframes titleGlow { 
+            from { text-shadow: 0 0 20px #00ffcc; }
+            to { text-shadow: 0 0 40px #00ffcc, 0 0 70px #8a2be2; }
+        }
         
         #ui { 
-            position: absolute; top: 15px; left: 15px; z-index: 10; 
-            color: #00ffcc; font-size: clamp(18px, 4vw, 26px); 
-            text-shadow: 0 0 10px #00ffcc; 
+            position: absolute; top: 18px; left: 18px; z-index: 10; 
+            color: #00ffcc; font-size: clamp(18px, 4.5vw, 26px); 
+            text-shadow: 0 0 12px #00ffcc; 
+        }
+        #high-score-ui {
+            position: absolute; top: 18px; right: 18px; z-index: 10;
+            color: #ffcc00; font-size: clamp(16px, 4vw, 22px); 
+            text-shadow: 0 0 12px #ffcc00;
         }
         #combo { 
-            position: absolute; top: 50px; left: 50%; transform: translateX(-50%); z-index: 10;
-            color: #ffcc00; font-size: clamp(16px, 4vw, 24px); 
-            text-shadow: 0 0 15px #ffcc00;
-            opacity: 0; transition: opacity 0.3s;
+            position: absolute; top: 65px; left: 50%; transform: translateX(-50%); z-index: 10;
+            color: #ffcc00; font-size: clamp(18px, 5vw, 28px); 
+            text-shadow: 0 0 20px #ffcc00;
+            opacity: 0; transition: all 0.4s;
         }
         #fact-popup {
-            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); z-index: 15;
-            max-width: 92%; padding: 14px 20px; background: rgba(0,0,0,0.9);
-            border: 2px solid #8a2be2; border-radius: 15px;
-            color: #00ffcc; font-size: clamp(12px, 2.5vw, 16px); text-align: center;
-            box-shadow: 0 0 25px rgba(138,43,226,0.6);
-            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+            position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); z-index: 15;
+            max-width: 90%; padding: 16px 24px; background: rgba(0,0,0,0.92);
+            border: 3px solid #8a2be2; border-radius: 18px;
+            color: #00ffcc; font-size: clamp(13px, 3vw, 17px); text-align: center;
+            box-shadow: 0 0 30px rgba(138,43,226,0.7);
+            opacity: 0; pointer-events: none; transition: opacity 0.5s;
         }
-        #fact-popup.show { opacity: 1; animation: factPulse 0.5s; }
-        @keyframes factPulse { 0% { transform: translateX(-50%) scale(0.9); } 100% { transform: translateX(-50%) scale(1); } }
-        
+        #fact-popup.show { opacity: 1; }
+
         #game-over { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            z-index: 20; color: #ff0044; font-size: clamp(24px, 6vw, 42px); text-align: center; 
-            text-shadow: 0 0 20px #ff0044; display: none; 
-            background: rgba(0,0,0,0.9); padding: 30px; border-radius: 20px; 
-            border: 2px solid #ff0044; max-width: 90%;
+            z-index: 20; color: #ff0044; font-size: clamp(26px, 7vw, 46px); text-align: center; 
+            text-shadow: 0 0 25px #ff0044; display: none; 
+            background: rgba(2,2,5,0.95); padding: 35px 25px; border-radius: 25px; 
+            border: 3px solid #ff0044; max-width: 92%;
         }
         .btn { 
-            margin-top: 20px; padding: 16px 36px; background: #00ffcc; color: #020205; 
-            font-size: 18px; font-family: inherit; border: none; 
-            border-radius: 12px; min-width: 160px; min-height: 52px;
+            margin-top: 25px; padding: 18px 40px; background: #00ffcc; color: #020205; 
+            font-size: 19px; font-family: inherit; border: none; 
+            border-radius: 50px; min-width: 200px;
         }
         .btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
     <div id="title-screen">
-        <h1>★ Star Polyhedron ★</h1>
-        <p class="subtitle">Звёздный Шутер</p>
-        <p class="desc">Защищай космос, стреляя фигурами Кеплера! Каждое уничтожение — новый факт о звёздчатых многогранниках.</p>
+        <h1>★ STAR POLYHEDRON ★</h1>
+        <p class="subtitle">ЗВЁЗДНЫЙ ШУТЕР</p>
+        <p class="desc">Защищай космос от метеоров!<br>Каждое комбо — новый факт о звёздчатых многогранниках</p>
         <button class="btn-start" id="btn-start">ИГРАТЬ</button>
     </div>
     
     <div id="ui">ЗВЁЗД: <span id="score">0</span></div>
+    <div id="high-score-ui">HI: <span id="high-score-ui-value">0</span></div>
     <div id="combo"></div>
     <div id="fact-popup"></div>
     
     <div id="game-over">
         КОРАБЛЬ РАЗБИТ!<br>
-        <span style="font-size: clamp(16px, 4vw, 22px); color: white;">Счёт: <span id="final-score">0</span></span><br>
-        <button class="btn" onclick="location.reload()">Ещё раз</button>
+        <span style="font-size: clamp(18px,4.5vw,26px);color:#fff;">СЧЁТ: <span id="final-score">0</span></span><br>
+        <span style="font-size: clamp(16px,4vw,22px);color:#ffcc00;">HIGH: <span id="final-high">0</span></span>
+        <button class="btn" onclick="location.reload()">ЕЩЁ РАЗ</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script>
-        // --- Факты о Star Polyhedron (из презентации!) ---
+        // Факты
         const STAR_FACTS = [
             "Звёздчатый октаэдр — два тетраэдра, проходящих сквозь друг друга!",
             "Кеплер открыл звёздчатые многогранники в 1619 году.",
-            "У малого звёздчатого додекаэдра 12 граней-пентаграмм!",
-            "Грани звездчатых многогранников пересекаются — это математика, не баг!",
-            "Тень звездчатого додекаэдра даёт правильный десятиугольник.",
-            "В играх такие фигуры — магические щиты и порталы.",
-            "Звездчатый многогранник похож на инопланетный кристалл!",
-            "Каждая грань обычного многогранника «выросла» в пирамиду.",
+            "Малый звёздчатый додекаэдр имеет 12 граней-пентаграмм!",
+            "Грани пересекаются — это математика, а не ошибка!",
+            "Тень звёздчатого додекаэдра — идеальный десятиугольник.",
+            "В играх такие фигуры — настоящие космические щиты!"
         ];
+
         let factTimeout;
+        let highScore = localStorage.getItem('starHigh') ? parseInt(localStorage.getItem('starHigh')) : 0;
+        document.getElementById('high-score-ui-value').innerText = highScore;
 
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -113,108 +135,102 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
+        // Звёздное небо
         const particlesGeometry = new THREE.BufferGeometry();
-        const posArray = new Float32Array(2500 * 3);
-        for(let i = 0; i < 2500 * 3; i++) posArray[i] = (Math.random() - 0.5) * 100;
+        const posArray = new Float32Array(3500 * 3);
+        for(let i = 0; i < 3500 * 3; i++) posArray[i] = (Math.random() - 0.5) * 120;
         particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const starMesh = new THREE.Points(
-            particlesGeometry,
-            new THREE.PointsMaterial({ size: 0.05, color: 0xffffff, transparent: true, opacity: 0.8 })
-        );
+        const starMesh = new THREE.Points(particlesGeometry, new THREE.PointsMaterial({size: 0.07, color: 0xffffff, transparent: true, opacity: 0.9}));
         scene.add(starMesh);
 
-        scene.add(new THREE.AmbientLight(0x404040, 2));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(5, 10, 5);
+        scene.add(new THREE.AmbientLight(0x404040, 2.2));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
+        dirLight.position.set(5, 15, 8);
         scene.add(dirLight);
 
-        let score = 0, combo = 0, comboTime = 0, isGameOver = false, gameStarted = false;
+        let score = 0, combo = 0, isGameOver = false, gameStarted = false;
+        let targetX = 0;
+        let isTouching = false;
+        let lastShot = 0;
+        const shotCooldown = 110;
+        let meteorSpeed = 0.038;
 
         function createStarPolyhedron(size, color, edgeColor) {
             const g = new THREE.Group();
-            const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3, roughness: 0.2, metalness: 0.9 });
+            const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5, metalness: 0.95, roughness: 0.1 });
             const edgesMat = new THREE.LineBasicMaterial({ color: edgeColor });
-            const geo1 = new THREE.TetrahedronGeometry(size);
-            const t1 = new THREE.Mesh(geo1, mat);
-            t1.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo1), edgesMat));
-            const geo2 = new THREE.TetrahedronGeometry(size);
-            const t2 = new THREE.Mesh(geo2, mat);
+            const geo = new THREE.TetrahedronGeometry(size);
+            const t1 = new THREE.Mesh(geo, mat);
+            t1.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgesMat));
+            const t2 = t1.clone();
             t2.scale.set(-1, -1, -1);
-            t2.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo2), edgesMat));
             g.add(t1); g.add(t2);
             return g;
         }
 
-        const player = createStarPolyhedron(0.9, 0x00ffcc, 0xffffff);
-        player.position.y = -4;
+        const player = createStarPolyhedron(0.95, 0x00ffcc, 0xffffff);
+        player.position.y = -4.2;
         scene.add(player);
 
         camera.position.z = 10;
 
-        const bullets = [];
-        const meteors = [];
-        const particles = [];
+        const bullets = [], meteors = [], particles = [];
 
         function createBullet() {
-            const b = createStarPolyhedron(0.4, 0x8a2be2, 0x00ffcc);
-            b.position.set(player.position.x, player.position.y + 1, 0);
+            const b = createStarPolyhedron(0.38, 0x8a2be2, 0x00ffcc);
+            b.position.set(player.position.x, player.position.y + 1.2, 0);
+            b.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
             scene.add(b);
             bullets.push(b);
         }
 
-        function spawnExplosion(x, y, color) {
-            const count = 12;
-            for (let i = 0; i < count; i++) {
-                const geo = new THREE.OctahedronGeometry(0.15);
-                const mat = new THREE.MeshBasicMaterial({ color: color || 0x8a2be2, transparent: true, opacity: 1 });
-                const p = new THREE.Mesh(geo, mat);
+        function spawnExplosion(x, y) {
+            for (let i = 0; i < 18; i++) {
+                const p = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshBasicMaterial({color: Math.random() > 0.5 ? 0x00ffcc : 0x8a2be2, transparent:true}));
                 p.position.set(x, y, 0);
-                const vx = (Math.random() - 0.5) * 0.15;
-                const vy = (Math.random() - 0.5) * 0.15;
+                const vx = (Math.random()-0.5)*0.22, vy = (Math.random()-0.5)*0.22;
                 scene.add(p);
-                particles.push({ mesh: p, vx, vy, life: 1 });
+                particles.push({mesh: p, vx, vy, life: 1.1});
             }
         }
 
         function showFact() {
             const el = document.getElementById('fact-popup');
-            el.textContent = STAR_FACTS[Math.floor(Math.random() * STAR_FACTS.length)];
+            el.textContent = STAR_FACTS[Math.floor(Math.random()*STAR_FACTS.length)];
             el.classList.add('show');
             clearTimeout(factTimeout);
-            factTimeout = setTimeout(() => el.classList.remove('show'), 3500);
+            factTimeout = setTimeout(() => el.classList.remove('show'), 3800);
         }
 
         function showCombo(msg) {
             const el = document.getElementById('combo');
             el.textContent = msg;
             el.style.opacity = '1';
-            clearTimeout(comboTime);
-            comboTime = setTimeout(() => { el.style.opacity = '0'; }, 1200);
+            setTimeout(() => el.style.opacity = '0', 1100);
         }
 
         function spawnMeteor() {
             if (isGameOver || !gameStarted) return;
-            const r = Math.random() * 0.8 + 0.4;
+            const r = Math.random() * 0.7 + 0.5;
             const meteor = new THREE.Mesh(
-                new THREE.DodecahedronGeometry(r, 0),
-                new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.9 })
+                new THREE.DodecahedronGeometry(r, 1),
+                new THREE.MeshStandardMaterial({color: 0x555555, roughness: 0.95, metalness: 0.1})
             );
-            meteor.position.set((Math.random() - 0.5) * 16, 8, 0);
-            meteor.userData = { rotX: Math.random() * 0.05, rotY: Math.random() * 0.05 };
+            meteor.position.set((Math.random() - 0.5) * 15, 9, 0);
+            meteor.userData = { rotX: Math.random() * 0.06, rotY: Math.random() * 0.06 };
             scene.add(meteor);
             meteors.push(meteor);
         }
 
-        let meteorInterval = setInterval(spawnMeteor, 1500);
-
-        let lastShot = 0;
-        const shotCooldown = 120;
+        let meteorInterval = setInterval(spawnMeteor, 1250);
 
         function getShipBounds() {
             const vFov = camera.fov * Math.PI / 180;
-            const h = 2 * Math.tan(vFov / 2) * Math.abs(camera.position.z - player.position.z);
-            const w = h * (window.innerWidth / window.innerHeight);
-            return { min: -w/2 + 0.5, max: w/2 - 0.5 };
+            const distance = Math.abs(camera.position.z);
+            const height = 2 * Math.tan(vFov / 2) * distance;
+            const width = height * (window.innerWidth / window.innerHeight);
+            const shipRadius = 1.4;
+            return { min: -width/2 + shipRadius, max: width/2 - shipRadius };
         }
 
         function screenToWorldX(clientX) {
@@ -225,72 +241,107 @@
 
         function updateShipX(clientX) {
             const b = getShipBounds();
-            player.position.x = Math.max(b.min, Math.min(b.max, screenToWorldX(clientX)));
+            targetX = Math.max(b.min, Math.min(b.max, screenToWorldX(clientX)));
         }
 
         function handleStart(e) {
             e.preventDefault();
-            const x = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
-            fire();
+            isTouching = true;
+            if (gameStarted && !isGameOver) createBullet();
         }
 
         function handleMove(e) {
             e.preventDefault();
-            const x = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
             updateShipX(x);
         }
 
-        document.body.addEventListener('contextmenu', (e) => e.preventDefault());
-        document.body.addEventListener('touchstart', handleStart, { passive: false });
-        document.body.addEventListener('touchmove', handleMove, { passive: false });
+        function handleEnd() {
+            isTouching = false;
+        }
+
+        document.body.addEventListener('touchstart', handleStart, {passive: false});
+        document.body.addEventListener('touchmove', handleMove, {passive: false});
+        document.body.addEventListener('touchend', handleEnd);
         document.body.addEventListener('mousedown', handleStart);
         document.body.addEventListener('mousemove', (e) => { if (e.buttons) handleMove(e); });
-        document.getElementById('btn-start').addEventListener('click', (e) => {
-            e.preventDefault();
+        document.body.addEventListener('mouseup', handleEnd);
+        document.getElementById('btn-start').addEventListener('click', () => {
             document.getElementById('title-screen').classList.add('hidden');
             gameStarted = true;
         });
 
         function fire() {
-            if (isGameOver || !gameStarted) return;
-            const now = Date.now();
-            if (now - lastShot >= shotCooldown) { lastShot = now; createBullet(); }
+            if (Date.now() - lastShot >= shotCooldown) {
+                lastShot = Date.now();
+                createBullet();
+            }
         }
 
         function animate() {
             requestAnimationFrame(animate);
             if (!gameStarted) { renderer.render(scene, camera); return; }
 
-            starMesh.position.y -= 0.02;
-            if (starMesh.position.y < -20) starMesh.position.y = 0;
+            // Плавное движение корабля
+            player.position.x = THREE.MathUtils.lerp(player.position.x, targetX, 0.28);
+            
+            // Наклон корабля
+            const tilt = (targetX - player.position.x) * 2.8;
+            player.rotation.z = THREE.MathUtils.lerp(player.rotation.z, tilt, 0.35);
+            player.rotation.x += 0.012;
+            player.rotation.y += 0.018;
 
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const b = bullets[i];
-                b.position.y += 0.3;
-                b.rotation.z += 0.2;
-                b.rotation.x += 0.1;
-                if (b.position.y > 10) { scene.remove(b); bullets.splice(i, 1); }
+            // Фон
+            starMesh.position.y -= 0.025;
+            if (starMesh.position.y < -30) starMesh.position.y = 30;
+
+            // Авто-стрельба при удержании
+            if (isTouching && !isGameOver) {
+                const now = Date.now();
+                if (now - lastShot >= shotCooldown) {
+                    lastShot = now;
+                    createBullet();
+                }
             }
 
+            // Пули
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.position.y += 0.38;
+                b.rotation.z += 0.25;
+                b.rotation.x += 0.15;
+                if (b.position.y > 11) {
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Частицы взрывов
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.mesh.position.x += p.vx;
                 p.mesh.position.y += p.vy;
-                p.life -= 0.03;
+                p.life -= 0.038;
                 p.mesh.material.opacity = p.life;
-                if (p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
             }
 
+            // Метеоры
+            meteorSpeed = Math.min(0.038 + score / 9000, 0.085);
             for (let i = meteors.length - 1; i >= 0; i--) {
                 const m = meteors[i];
-                m.position.y -= 0.035;
+                m.position.y -= meteorSpeed;
                 m.rotation.x += m.userData.rotX;
                 m.rotation.y += m.userData.rotY;
 
-                if (m.position.distanceTo(player.position) < 1.2 && !isGameOver) gameOver();
+                if (m.position.distanceTo(player.position) < 1.35) gameOver();
 
-                if (m.position.y < -8) {
+                if (m.position.y < -9) {
                     scene.remove(m);
                     meteors.splice(i, 1);
                     combo = 0;
@@ -299,18 +350,19 @@
 
                 for (let j = bullets.length - 1; j >= 0; j--) {
                     const b = bullets[j];
-                    if (m.position.distanceTo(b.position) < 1.0) {
+                    if (m.position.distanceTo(b.position) < 1.1) {
                         spawnExplosion(m.position.x, m.position.y);
-                        scene.remove(m);
-                        meteors.splice(i, 1);
-                        scene.remove(b);
-                        bullets.splice(j, 1);
+                        scene.remove(m); meteors.splice(i, 1);
+                        scene.remove(b); bullets.splice(j, 1);
+                        
                         combo++;
-                        const pts = 10 + (combo >= 3 ? 5 : 0) + (combo >= 5 ? 10 : 0);
+                        const pts = 10 + (combo >= 3 ? 8 : 0) + (combo >= 6 ? 12 : 0);
                         score += pts;
                         document.getElementById('score').innerText = score;
-                        if (combo >= 5) showCombo('★ Stella Octangula! +' + pts + ' ★');
-                        else if (combo >= 3) showCombo('Комбо x' + combo + '!');
+                        
+                        if (combo >= 6) showCombo('★ STELLA OCTANGULA! ★');
+                        else if (combo >= 3) showCombo('КОМБО x' + combo + '!');
+                        
                         showFact();
                         break;
                     }
@@ -321,9 +373,16 @@
         }
 
         function gameOver() {
+            if (isGameOver) return;
             isGameOver = true;
             clearInterval(meteorInterval);
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('starHigh', highScore);
+            }
             document.getElementById('final-score').innerText = score;
+            document.getElementById('final-high').innerText = highScore;
             document.getElementById('game-over').style.display = 'block';
         }
 
