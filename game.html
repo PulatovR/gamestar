@@ -2,13 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#020205">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Star Polyhedron — Звёздный Шутер</title>
     <style>
-        * { touch-action: manipulation; }
+        * { touch-action: manipulation; -webkit-touch-callout: none; }
         html, body { 
             margin: 0; padding: 0; 
             background: #020205; 
@@ -49,8 +49,8 @@
             opacity: 0; transition: opacity 0.3s;
         }
         #fact-popup {
-            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 15;
-            max-width: 90%; padding: 15px 25px; background: rgba(0,0,0,0.9);
+            position: absolute; bottom: 140px; left: 50%; transform: translateX(-50%); z-index: 15;
+            max-width: 92%; padding: 14px 20px; background: rgba(0,0,0,0.9);
             border: 2px solid #8a2be2; border-radius: 15px;
             color: #00ffcc; font-size: clamp(12px, 2.5vw, 16px); text-align: center;
             box-shadow: 0 0 25px rgba(138,43,226,0.6);
@@ -60,27 +60,39 @@
         @keyframes factPulse { 0% { transform: translateX(-50%) scale(0.9); } 100% { transform: translateX(-50%) scale(1); } }
         
         #controls { 
-            position: absolute; bottom: 15px; width: 100%; text-align: center; z-index: 10; 
-            color: rgba(255,255,255,0.5); font-size: clamp(11px, 2.5vw, 14px); 
+            position: absolute; bottom: max(12px, env(safe-area-inset-bottom)); 
+            width: 100%; text-align: center; z-index: 10; 
+            color: rgba(255,255,255,0.5); font-size: 13px; 
         }
         
-        /* Мобильное управление */
+        /* Сенсорное управление — всё экрана для касаний */
         #touch-zone { 
-            position: absolute; bottom: 0; left: 0; right: 0; height: 45%; z-index: 5;
-            display: grid; grid-template-columns: 1fr 1fr; 
+            position: absolute; bottom: 0; left: 0; right: 0; 
+            height: 50%; min-height: 180px; z-index: 5;
+            display: grid; grid-template-columns: 1fr 1fr;
         }
         #touch-left, #touch-right { 
             touch-action: none; 
-            /* визуальная подсказка в дебаге: background: rgba(255,0,0,0.1); */
+            -webkit-user-select: none; user-select: none;
         }
+        #touch-left:active { background: rgba(0,255,204,0.08); }
+        #touch-right:active { background: rgba(138,43,226,0.08); }
         #touch-shoot { 
-            position: absolute; right: 20px; bottom: 50%; 
-            width: 80px; height: 80px; 
-            border-radius: 50%; background: rgba(0,255,204,0.2);
-            border: 3px solid #00ffcc; 
-            transform: translateY(50%);
+            position: absolute; 
+            right: max(15px, env(safe-area-inset-right));
+            bottom: 50%; transform: translateY(50%);
+            width: 100px; height: 100px; min-width: 80px; min-height: 80px;
+            border-radius: 50%; 
+            background: rgba(0,255,204,0.25);
+            border: 4px solid #00ffcc; 
             display: flex; align-items: center; justify-content: center;
-            color: #00ffcc; font-size: 12px; font-weight: bold;
+            color: #00ffcc; font-size: 14px; font-weight: bold;
+            box-shadow: 0 0 25px rgba(0,255,204,0.4);
+            touch-action: none;
+        }
+        #touch-shoot:active { 
+            transform: translateY(50%) scale(0.92); 
+            background: rgba(0,255,204,0.4);
         }
         
         #game-over { 
@@ -91,9 +103,9 @@
             border: 2px solid #ff0044; max-width: 90%;
         }
         .btn { 
-            margin-top: 20px; padding: 14px 30px; background: #00ffcc; color: #020205; 
+            margin-top: 20px; padding: 16px 36px; background: #00ffcc; color: #020205; 
             font-size: 18px; font-family: inherit; border: none; 
-            border-radius: 12px; cursor: pointer; min-width: 140px;
+            border-radius: 12px; min-width: 160px; min-height: 52px;
         }
         .btn:active { transform: scale(0.95); }
     </style>
@@ -109,13 +121,13 @@
     <div id="ui">ЗВЁЗД: <span id="score">0</span></div>
     <div id="combo"></div>
     <div id="fact-popup"></div>
-    <div id="controls">ПК: стрелки + пробел • Телефон: касания слева/справа + кнопка ОГОНЬ</div>
+    <div id="controls">← Влево | Вправо → | ОГОНЬ ✦</div>
     
-    <div id="touch-zone" style="display:none;">
+    <div id="touch-zone">
         <div id="touch-left"></div>
         <div id="touch-right"></div>
     </div>
-    <div id="touch-shoot" style="display:none;">ОГОНЬ</div>
+    <div id="touch-shoot">✦ ОГОНЬ</div>
     
     <div id="game-over">
         КОРАБЛЬ РАЗБИТ!<br>
@@ -240,38 +252,30 @@
 
         const keys = { left: false, right: false };
         let lastShot = 0;
-        const shotCooldown = 180;
-        const isTouch = 'ontouchstart' in window;
+        const shotCooldown = 150;
 
-        if (isTouch) {
-            document.getElementById('touch-zone').style.display = 'grid';
-            document.getElementById('touch-shoot').style.display = 'flex';
-            const left = document.getElementById('touch-left');
-            const right = document.getElementById('touch-right');
-            const shoot = document.getElementById('touch-shoot');
-            const setKey = (side, val) => (e) => { e.preventDefault(); keys[side] = val; };
-            left.addEventListener('touchstart', setKey('left', true), { passive: false });
-            left.addEventListener('touchend', setKey('left', false), { passive: false });
-            left.addEventListener('touchcancel', setKey('left', false), { passive: false });
-            right.addEventListener('touchstart', setKey('right', true), { passive: false });
-            right.addEventListener('touchend', setKey('right', false), { passive: false });
-            right.addEventListener('touchcancel', setKey('right', false), { passive: false });
-            shoot.addEventListener('touchstart', (e) => { e.preventDefault(); fire(); }, { passive: false });
-        }
+        const left = document.getElementById('touch-left');
+        const right = document.getElementById('touch-right');
+        const shoot = document.getElementById('touch-shoot');
 
-        document.getElementById('btn-start').addEventListener('click', () => {
+        const preventAll = (e) => { e.preventDefault(); e.stopPropagation(); };
+        const setKey = (side, val) => (e) => { preventAll(e); keys[side] = val; };
+
+        left.addEventListener('pointerdown', setKey('left', true), { passive: false });
+        left.addEventListener('pointerup', setKey('left', false), { passive: false });
+        left.addEventListener('pointerleave', setKey('left', false), { passive: false });
+        left.addEventListener('pointercancel', setKey('left', false), { passive: false });
+        right.addEventListener('pointerdown', setKey('right', true), { passive: false });
+        right.addEventListener('pointerup', setKey('right', false), { passive: false });
+        right.addEventListener('pointerleave', setKey('right', false), { passive: false });
+        right.addEventListener('pointercancel', setKey('right', false), { passive: false });
+        shoot.addEventListener('pointerdown', (e) => { preventAll(e); fire(); }, { passive: false });
+
+        document.body.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.getElementById('btn-start').addEventListener('click', (e) => {
+            e.preventDefault();
             document.getElementById('title-screen').classList.add('hidden');
             gameStarted = true;
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'ArrowLeft') keys.left = true;
-            if (e.code === 'ArrowRight') keys.right = true;
-            if (e.code === 'Space') { e.preventDefault(); fire(); }
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.code === 'ArrowLeft') keys.left = false;
-            if (e.code === 'ArrowRight') keys.right = false;
         });
 
         function fire() {
